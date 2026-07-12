@@ -13,46 +13,32 @@ from src.embeddings import build_embedding_model
 
 
 STRICT_SYSTEM_PROMPT = """
-You are AutoDefect Radar, a careful assistant for learning RAG over NHTSA data.
-You answer only from the retrieved context.
-Use both metadata fields and complaint summaries as evidence.
-Component labels such as SERVICE BRAKES, ABS, VSA, brake lights, and braking
-system descriptions are brake-related evidence.
-When a question asks whether a kind of issue or complaint exists, inspect each
-Context Chunk's Components line first. A matching Components value is enough to
-say that matching complaints exist.
-A single matching complaint is enough evidence to answer that the complaint
-type exists in the indexed data.
-Do not say there is no relevant information when the retrieved context includes
-matching Components, titles, or summaries.
-If the retrieved context contains relevant evidence, answer directly with a concise synthesis and citations.
-Every factual claim about a defect, recall, complaint, consequence, or remedy must cite the evidence ID from the context, such as NHTSA Campaign 18V661000 or ODI 11745320.
-If the retrieved context does not support the answer, say: "The indexed NHTSA data does not support an answer to that question."
-Do not provide safety, legal, repair, or diagnostic advice. Suggest checking official NHTSA/OEM sources for action.
+You are AutoDefect Radar, answering questions about indexed NHTSA records.
+Answer only from the retrieved context below.
+If the context does not answer the question, say: "The indexed NHTSA data does not support an answer to that question."
+State what the records report; do not diagnose, infer root cause, or give repair, legal, or safety advice.
+Include evidence IDs for factual claims, such as ODI 11745320 or NHTSA Campaign 18V661000.
 
-Retrieved context:
+Context:
 {context}
+
+Answer the user's question accurately and concisely.
 """
 
 
 RELAXED_SYSTEM_PROMPT = """
-You are AutoDefect Radar, a careful assistant for learning RAG over NHTSA data.
-Use the retrieved context as the evidence base for your answer, combining
-metadata fields and complaint summaries when they are relevant.
-Component labels such as SERVICE BRAKES, ABS, VSA, brake lights, and braking
-system descriptions are brake-related evidence.
-When a question asks whether a kind of issue or complaint exists, inspect each
-Context Chunk's Components line first. A matching Components value is enough to
-say that matching complaints exist.
-A single matching complaint is enough evidence to answer that the complaint
-type exists in the indexed data.
-If the retrieved context contains relevant evidence, answer directly with a concise synthesis and citations.
-Every factual claim about a defect, recall, complaint, consequence, or remedy must cite the evidence ID from the context, such as NHTSA Campaign 18V661000 or ODI 11745320.
-If the retrieved context is not enough to answer, say what evidence is missing or say: "The indexed NHTSA data does not support an answer to that question."
-Do not provide safety, legal, repair, or diagnostic advice. Suggest checking official NHTSA/OEM sources for action.
+You are AutoDefect Radar, answering questions about indexed NHTSA records.
+Use the retrieved context below as the evidence base.
+Component labels, titles, summaries, and metadata can all be evidence.
+If one retrieved complaint or recall matches the issue asked about, say it exists.
+If the context is not enough, say what evidence is missing.
+State what the records report; do not diagnose, infer root cause, or give repair, legal, or safety advice.
+Include evidence IDs for factual claims, such as ODI 11745320 or NHTSA Campaign 18V661000.
 
-Retrieved context:
+Context:
 {context}
+
+Answer the user's question accurately and concisely.
 """
 
 
@@ -95,7 +81,7 @@ def answer_question(
     strict_prompt: bool | None = None,
 ) -> tuple[str, list[Document]]:
     docs = fetch_context(question, k=k, vector_db_dir=vector_db_dir, embeddings=embeddings)
-
+    print(f"Retrieved {len(docs)} context chunks for question: {question!r}")
     if not docs:
         return (
             "The indexed NHTSA data does not support an answer to that question.",
@@ -103,14 +89,17 @@ def answer_question(
         )
 
     context = format_context(docs)
+    print(f"Retrieved context")
     messages = [SystemMessage(content=build_system_prompt(context, strict_prompt))]
     if history:
         messages.extend(convert_to_messages(history))
     messages.append(HumanMessage(content=question))
-
+    print(f"LLM messages")
     llm = ChatOllama(temperature=0, model=model)
     try:
+        print(f"Invoking Ollama model {model!r}...")
         response = llm.invoke(messages)
+        print(f"LLM response: {response.content}")
     except Exception as exc:
         raise AnswerGenerationError(
             f"Could not generate an answer with Ollama model {model!r}. "
