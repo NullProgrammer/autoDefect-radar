@@ -1,0 +1,21 @@
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+RAW_CACHE_DIR = DATA_DIR / "raw_cache"
+KNOWLEDGE_BASE_DIR = DATA_DIR / "knowledge-base"
+VECTOR_DB_DIR = DATA_DIR / "vector_db"
+
+DEFAULT_MAKE = "HONDA"
+DEFAULT_MODEL = "ACCORD"
+DEFAULT_MODEL_YEAR = 2012
+DEFAULT_COMPLAINTS_LIMIT = 100
+
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+LLM_MODEL = "gemma3:270m"
+COLLECTION_NAME = "nhtsa_docs"
+DEFAULT_RETRIEVAL_K = 6
+
+CHUNK_SIZE = 800
+CHUNK_OVERLAP = 150
