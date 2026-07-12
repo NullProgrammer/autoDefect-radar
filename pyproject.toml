@@ -11,6 +11,7 @@ license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "chromadb>=1.1.0",
+    "gradio>=6.20.0",
     "langchain-chroma>=0.2.6",
     "langchain-core>=0.3.76",
     "langchain-huggingface>=1.0.0",
@@ -23,6 +24,7 @@ dependencies = [
 
 [project.scripts]
 autodefect-radar = "src.cli:main"
+autodefect-radar-ui = "src.app:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

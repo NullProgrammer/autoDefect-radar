@@ -162,8 +162,8 @@ def test_build_system_prompt_defaults_to_relaxed_config(monkeypatch):
 
     prompt = build_system_prompt("Context Chunk 1")
 
-    assert "Use the retrieved context as the evidence base" in prompt
-    assert "You answer only from the retrieved context" not in prompt
+    assert "Use the retrieved context below as the evidence base" in prompt
+    assert "Answer only from the retrieved context below" not in prompt
 
 
 def test_build_system_prompt_can_enable_strict_mode(monkeypatch):
@@ -171,4 +171,4 @@ def test_build_system_prompt_can_enable_strict_mode(monkeypatch):
 
     prompt = build_system_prompt("Context Chunk 1")
 
-    assert "You answer only from the retrieved context" in prompt
+    assert "Answer only from the retrieved context below" in prompt

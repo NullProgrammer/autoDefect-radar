@@ -80,6 +80,17 @@ By default, the answer prompt is relaxed so the model can synthesize from
 retrieved evidence without over-refusing. Set `STRICT_ANSWER_PROMPT = True` in
 `src/config.py` to restore strict context-only answering.
 
+## Run the Gradio UI
+
+After building the index, launch the browser UI:
+
+```bash
+uv run autodefect-radar-ui
+```
+
+The UI calls the same answer path as the `ask` command and shows the request
+payload, answer, retrieved sources, and retrieved context.
+
 ## Data and privacy
 
 NHTSA complaint records can contain vehicle identification numbers and
