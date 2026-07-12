@@ -50,6 +50,29 @@ def test_unavailable_ollama_has_actionable_error(monkeypatch, capsys):
     assert "Make sure Ollama is running" in capsys.readouterr().err
 
 
+def test_ask_passes_llm_model_override(monkeypatch, capsys):
+    calls = []
+
+    def fake_answer_question(*args, **kwargs):
+        calls.append((args, kwargs))
+        return "answer", []
+
+    monkeypatch.setattr(cli, "answer_question", fake_answer_question)
+
+    exit_code = cli.main(
+        ["ask", "What brake complaints exist?", "--llm-model", "qwen2.5:7b"]
+    )
+
+    assert exit_code == 0
+    assert calls == [
+        (
+            ("What brake complaints exist?",),
+            {"k": cli.config.DEFAULT_RETRIEVAL_K, "model": "qwen2.5:7b"},
+        )
+    ]
+    assert "answer" in capsys.readouterr().out
+
+
 def test_ingest_reports_counts(monkeypatch, capsys):
     records = VehicleRecords(
         query=VehicleQuery(),

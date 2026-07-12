@@ -42,6 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ask_parser.add_argument("question", type=_nonempty_text)
     ask_parser.add_argument("--k", type=_positive_int, default=config.DEFAULT_RETRIEVAL_K)
+    ask_parser.add_argument("--llm-model", default=config.LLM_MODEL)
 
     return parser
 
@@ -62,7 +63,7 @@ def run(args: argparse.Namespace) -> int:
         )
         return 0
 
-    answer, docs = answer_question(args.question, k=args.k)
+    answer, docs = answer_question(args.question, k=args.k, model=args.llm_model)
     print("\nAnswer\n======")
     print(answer)
     print("\nRetrieved Sources\n=================")

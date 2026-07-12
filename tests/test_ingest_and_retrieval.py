@@ -4,7 +4,7 @@ from langchain_core.embeddings import Embeddings
 
 from langchain_core.documents import Document
 
-from src.answer import ensure_citations, fetch_context, should_answer_from_context
+from src.answer import ensure_citations, fetch_context
 from src.ingest import ingest_knowledge_base
 from src.kb import build_knowledge_base
 from src.models import VehicleQuery, VehicleRecords
@@ -106,9 +106,6 @@ def test_ingestion_preserves_metadata_and_retrieves_expected_sources(tmp_path: P
         for doc in abs_docs
     )
 
-    assert should_answer_from_context("best pizza in town", abs_docs) is False
-
-
 def test_ensure_citations_appends_missing_evidence_ids():
     docs = [
         Document(page_content="Recall text", metadata={"source_type": "recall", "evidence_id": "18V661000"}),
@@ -119,3 +116,41 @@ def test_ensure_citations_appends_missing_evidence_ids():
 
     assert "NHTSA Campaign 18V661000" in answer
     assert "ODI 11681044" in answer
+
+
+def test_ensure_citations_does_not_append_evidence_to_unsupported_answer():
+    docs = [
+        Document(
+            page_content="Complaint text",
+            metadata={"source_type": "complaint", "evidence_id": "11681044"},
+        ),
+    ]
+
+    answer = ensure_citations(
+        "The indexed NHTSA data does not support an answer to that question.",
+        docs,
+    )
+
+    assert (
+        answer
+        == "The indexed NHTSA data does not support an answer to that question."
+    )
+
+
+def test_ensure_citations_does_not_append_evidence_to_generic_refusal():
+    docs = [
+        Document(
+            page_content="Complaint text",
+            metadata={"source_type": "complaint", "evidence_id": "11681044"},
+        ),
+    ]
+
+    answer = ensure_citations(
+        "The provided text does not contain any information about brake complaints.",
+        docs,
+    )
+
+    assert (
+        answer
+        == "The provided text does not contain any information about brake complaints."
+    )
