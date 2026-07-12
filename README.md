@@ -6,7 +6,7 @@ Highway Traffic Safety Administration (NHTSA).
 
 The application fetches public NHTSA records for a vehicle, redacts VINs from
 complaint text, builds a local Chroma vector index, and answers questions using
-a local Ollama model. Answers are constrained to retrieved records and include
+a local Ollama model. Answers use retrieved records as evidence and include
 NHTSA campaign or ODI complaint identifiers.
 
 AutoDefect Radar is an independent open-source project. It is not affiliated
@@ -75,6 +75,10 @@ uv run autodefect-radar ask "Are there ABS module complaints?" --k 6
 
 The `ask` command requires an index created by `ingest` and a running Ollama
 service.
+
+By default, the answer prompt is relaxed so the model can synthesize from
+retrieved evidence without over-refusing. Set `STRICT_ANSWER_PROMPT = True` in
+`src/config.py` to restore strict context-only answering.
 
 ## Data and privacy
 

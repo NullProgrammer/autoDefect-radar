@@ -4,7 +4,8 @@ from langchain_core.embeddings import Embeddings
 
 from langchain_core.documents import Document
 
-from src.answer import ensure_citations, fetch_context
+from src import config
+from src.answer import build_system_prompt, ensure_citations, fetch_context
 from src.ingest import ingest_knowledge_base
 from src.kb import build_knowledge_base
 from src.models import VehicleQuery, VehicleRecords
@@ -154,3 +155,20 @@ def test_ensure_citations_does_not_append_evidence_to_generic_refusal():
         answer
         == "The provided text does not contain any information about brake complaints."
     )
+
+
+def test_build_system_prompt_defaults_to_relaxed_config(monkeypatch):
+    monkeypatch.setattr(config, "STRICT_ANSWER_PROMPT", False)
+
+    prompt = build_system_prompt("Context Chunk 1")
+
+    assert "Use the retrieved context as the evidence base" in prompt
+    assert "You answer only from the retrieved context" not in prompt
+
+
+def test_build_system_prompt_can_enable_strict_mode(monkeypatch):
+    monkeypatch.setattr(config, "STRICT_ANSWER_PROMPT", True)
+
+    prompt = build_system_prompt("Context Chunk 1")
+
+    assert "You answer only from the retrieved context" in prompt

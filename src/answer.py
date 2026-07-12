@@ -12,7 +12,7 @@ from src import config
 from src.embeddings import build_embedding_model
 
 
-SYSTEM_PROMPT = """
+STRICT_SYSTEM_PROMPT = """
 You are AutoDefect Radar, a careful assistant for learning RAG over NHTSA data.
 You answer only from the retrieved context.
 Use both metadata fields and complaint summaries as evidence.
@@ -28,6 +28,27 @@ matching Components, titles, or summaries.
 If the retrieved context contains relevant evidence, answer directly with a concise synthesis and citations.
 Every factual claim about a defect, recall, complaint, consequence, or remedy must cite the evidence ID from the context, such as NHTSA Campaign 18V661000 or ODI 11745320.
 If the retrieved context does not support the answer, say: "The indexed NHTSA data does not support an answer to that question."
+Do not provide safety, legal, repair, or diagnostic advice. Suggest checking official NHTSA/OEM sources for action.
+
+Retrieved context:
+{context}
+"""
+
+
+RELAXED_SYSTEM_PROMPT = """
+You are AutoDefect Radar, a careful assistant for learning RAG over NHTSA data.
+Use the retrieved context as the evidence base for your answer, combining
+metadata fields and complaint summaries when they are relevant.
+Component labels such as SERVICE BRAKES, ABS, VSA, brake lights, and braking
+system descriptions are brake-related evidence.
+When a question asks whether a kind of issue or complaint exists, inspect each
+Context Chunk's Components line first. A matching Components value is enough to
+say that matching complaints exist.
+A single matching complaint is enough evidence to answer that the complaint
+type exists in the indexed data.
+If the retrieved context contains relevant evidence, answer directly with a concise synthesis and citations.
+Every factual claim about a defect, recall, complaint, consequence, or remedy must cite the evidence ID from the context, such as NHTSA Campaign 18V661000 or ODI 11745320.
+If the retrieved context is not enough to answer, say what evidence is missing or say: "The indexed NHTSA data does not support an answer to that question."
 Do not provide safety, legal, repair, or diagnostic advice. Suggest checking official NHTSA/OEM sources for action.
 
 Retrieved context:
@@ -71,6 +92,7 @@ def answer_question(
     vector_db_dir: Path = config.VECTOR_DB_DIR,
     model: str = config.LLM_MODEL,
     embeddings: Embeddings | None = None,
+    strict_prompt: bool | None = None,
 ) -> tuple[str, list[Document]]:
     docs = fetch_context(question, k=k, vector_db_dir=vector_db_dir, embeddings=embeddings)
 
@@ -81,7 +103,7 @@ def answer_question(
         )
 
     context = format_context(docs)
-    messages = [SystemMessage(content=SYSTEM_PROMPT.format(context=context))]
+    messages = [SystemMessage(content=build_system_prompt(context, strict_prompt))]
     if history:
         messages.extend(convert_to_messages(history))
     messages.append(HumanMessage(content=question))
@@ -95,6 +117,13 @@ def answer_question(
             "Make sure Ollama is running and the model is installed."
         ) from exc
     return ensure_citations(response.content, docs), docs
+
+
+def build_system_prompt(context: str, strict_prompt: bool | None = None) -> str:
+    if strict_prompt is None:
+        strict_prompt = config.STRICT_ANSWER_PROMPT
+    prompt = STRICT_SYSTEM_PROMPT if strict_prompt else RELAXED_SYSTEM_PROMPT
+    return prompt.format(context=context)
 
 
 def format_context(docs: list[Document]) -> str:
